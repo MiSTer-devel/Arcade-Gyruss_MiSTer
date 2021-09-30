@@ -190,9 +190,10 @@ assign {SDRAM_DQ, SDRAM_A, SDRAM_BA, SDRAM_CLK, SDRAM_CKE, SDRAM_DQML, SDRAM_DQM
 
 assign VGA_F1 = 0;
 assign VGA_SCALER = 0;
-assign FB_FORCE_BLANK = 0;
 assign HDMI_FREEZE = 0;
+assign FB_FORCE_BLANK = 0;
 
+assign VGA_F1 = 0;
 wire signed [15:0] audio_l, audio_r;
 assign AUDIO_L = audio_l;
 assign AUDIO_R = audio_r;
@@ -218,6 +219,7 @@ localparam CONF_STR = {
 	"OC,Orientation,Vert,Horz;",
 	"OFH,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"-;",
+	"H2OR,Autosave Hiscores,Off,On;",
 	"P1,Pause options;",
 	"P1OP,Pause when OSD is open,On,Off;",
 	"P1OQ,Dim video after 10s,On,Off;",
@@ -240,6 +242,7 @@ wire [10:0] ps2_key;
 
 wire        ioctl_download;
 wire        ioctl_upload;
+wire        ioctl_upload_req;
 wire        ioctl_wr;
 wire [24:0] ioctl_addr;
 wire  [7:0] ioctl_dout;
@@ -264,10 +267,11 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 
 	.buttons(buttons),
 	.status(status),
-	.status_menumask(direct_video),
+	.status_menumask({~hs_configured, direct_video}),
 
 	.ioctl_download(ioctl_download),
 	.ioctl_upload(ioctl_upload),
+	.ioctl_upload_req(ioctl_upload_req),
 	.ioctl_wr(ioctl_wr),
 	.ioctl_addr(ioctl_addr),
 	.ioctl_dout(ioctl_dout),
@@ -443,10 +447,10 @@ Gyruss Gyruss_inst
 	.pause(pause_cpu),
 	
 	.hs_address(hs_address),
-	.hs_data_out(ioctl_din),
+	.hs_data_out(hs_data_out),
 	.hs_data_in(hs_data_in),
-	.hs_write(hs_write),
-	.hs_access(hs_access)
+	.hs_write(hs_write_enable),
+	.hs_access(hs_access_read|hs_access_write)
 );
 
 // HISCORE SYSTEM
@@ -454,9 +458,12 @@ Gyruss Gyruss_inst
 
 wire [10:0] hs_address;
 wire [7:0] hs_data_in;
-wire hs_write;
-wire hs_access;
+wire [7:0] hs_data_out;
+wire hs_write_enable;
+wire hs_access_read;
+wire hs_access_write;
 wire hs_pause;
+wire hs_configured;
 
 hiscore #(
 	.HS_ADDRESSWIDTH(11),
@@ -466,11 +473,17 @@ hiscore #(
 	.*,
 	.clk(CLK_49M),
 	.paused(pause_cpu),
+	.autosave(status[27]),
 	.ram_address(hs_address),
+	.data_from_ram(hs_data_out),
 	.data_to_ram(hs_data_in),
-	.ram_write(hs_write),
-	.ram_access(hs_access),
-	.pause_cpu(hs_pause)
+	.data_from_hps(ioctl_dout),
+	.data_to_hps(ioctl_din),
+	.ram_write(hs_write_enable),
+	.ram_intent_read(hs_access_read),
+	.ram_intent_write(hs_access_write),
+	.pause_cpu(hs_pause),
+	.configured(hs_configured)
 );
 
 endmodule
