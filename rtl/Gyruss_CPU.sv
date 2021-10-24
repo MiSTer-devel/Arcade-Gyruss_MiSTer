@@ -444,10 +444,12 @@ k082 u11G
 	.v128(v_cnt[7])
 );
 
-//Latch vertical counter from 082 custom chip when the horizontal counter hits 256
+//Latch vertical counter from 082 custom chip on the rising edge of horizontal counter bit 8
 reg [7:0] vcnt_lat = 8'd0;
+reg old_n_h256;
 always_ff @(posedge clk_49m) begin
-	if(cen_6m && h_cnt == 9'd256)
+	old_n_h256 <= h_cnt[8];
+	if(!old_n_h256 && h_cnt[8])
 		vcnt_lat <= v_cnt;
 end
 
@@ -652,6 +654,7 @@ wire cs_linebuffer, sprite_flip;
 wire [5:0] k503_R;
 k503 u9F
 (
+	.CLK(clk_49m),
 	.OB(spriteram_reg[7:0]),
 	.VCNT(vcnt_lat),
 	.H4(h_cnt[2]),
@@ -802,7 +805,7 @@ k502 u6B
 	.CK1(clk_49m),
 	.CK2(clk_49m),
 	.CEN(cen_6m),
-	.LD0(h_cnt[2:0] == 3'b000),
+	.LDO(h_cnt[2:0] != 3'b111),
 	.H2(h_cnt[1]),
 	.H256(h_cnt[8]),
 	.SPAL(sprite_lut_D),
