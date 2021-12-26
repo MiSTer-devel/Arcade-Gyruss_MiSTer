@@ -96,7 +96,7 @@ assign cs_sounddata = (~n_k501_enable & z80_A[14]) & (z80_A[8:7] == 2'b10) & ~n_
 wire cs_soundirq = (~n_k501_enable & z80_A[14]) & (z80_A[8:7] == 2'b01) & ~n_ram_write;
 reg sound_irq = 1;
 always_ff @(posedge clk_49m) begin
-	if(n_cen_3m) begin
+	if(cen_3m) begin
 		if(cs_soundirq)
 			sound_irq <= 1;
 		else
@@ -112,14 +112,9 @@ reg [4:0] div = 5'd0;
 always_ff @(posedge clk_49m) begin
 	div <= div + 5'd1;
 end
-reg [3:0] n_div = 4'd0;
-always_ff @(negedge clk_49m) begin
-	n_div <= n_div + 4'd1;
-end
 wire cen_12m = !div[1:0];
 wire cen_6m = !div[2:0];
 wire cen_3m = !div[3:0];
-wire n_cen_3m = !n_div;
 wire cen_1m5 = !div;
 
 //Generate E and Q clock enables for KONAMI-1 (code adapted from Sorgelig's phase generator used in the MiSTer Vectrex core)
@@ -147,7 +142,7 @@ T80s u13G
 (
 	.RESET_n(reset),
 	.CLK(clk_49m),
-	.CEN(n_cen_3m & ~pause),
+	.CEN(cen_3m & ~pause),
 	.NMI_n(z80_nmi),
 	.WAIT_n(n_wait),
 	.MREQ_n(n_mreq),
@@ -248,7 +243,7 @@ always_ff @(posedge clk_49m) begin
 		z80_nmi_mask <= 0;
 		flip <= 0;
 	end
-	else if(n_cen_3m) begin
+	else if(cen_3m) begin
 		if(cs_mainlatch)
 			case(z80_A[2:0])
 				3'b000: z80_nmi_mask <= k501_D[0];

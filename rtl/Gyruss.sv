@@ -50,6 +50,11 @@ module Gyruss
 	input                ioctl_wr,
 	
 	input                pause,
+	
+	//This input serves to select different fractional dividers to acheive 3.579545MHz for the sound Z80, 1.789772MHz for the
+	//AY-3-8910s and 8MHz for the i8039 depending on whether Gyruss runs with original or underclocked timings to normalize
+	//sync frequencies
+	input                underclock,
 
 	input         [10:0] hs_address,
 	input          [7:0] hs_data_in,
@@ -166,6 +171,8 @@ Gyruss_SND sound_pcb
 	.controls_dip(controls_dip),
 	.sound_l(sound_l),
 	.sound_r(sound_r),
+	
+	.underclock(underclock),
 	
 	.ep10_cs_i(ep10_cs_i),
 	.ep11_cs_i(ep11_cs_i),

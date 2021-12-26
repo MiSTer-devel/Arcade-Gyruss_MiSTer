@@ -20,6 +20,7 @@ An FPGA implementation of Gyruss for the MiSTer platform
 - JT49 sound core by Jotego with modifications to the volume scale by Ace
 - T48 MCU by Arnim Laeuger configured as an i8039
 - Fully-tuned switchable low-pass filters
+- Option for normalized video timings to use with picky HDTVs and monitors (underclocks the game by ~1%)
 
 ## Installation
 Place `*.rbf` into the "_Arcade/cores" folder on your SD card.  Then, place `*.mra` into the "_Arcade" folder and ROM files from MAME into "games/mame".
