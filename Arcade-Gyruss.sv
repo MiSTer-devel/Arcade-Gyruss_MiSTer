@@ -5,8 +5,9 @@
 //
 //  Gyruss for MiSTer
 //  Original design Copyright (C) 2020 MiSTer-X
-//  Updated design Copyright (C) 2021 Ace, Ash Evans (aka ElectronAsh/OzOnE),
-//  Artemio Urbina, JimmyStones and Kitrinx (aka Rysha)
+//  Updated design Copyright (C) 2021, 2022 Ace, Ash Evans
+//  (aka ElectronAsh/OzOnE), Artemio Urbina, JimmyStones and Kitrinx
+//  (aka Rysha)
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -38,7 +39,7 @@ module emu
 	input         RESET,
 
 	//Must be passed to hps_io module
-	inout  [45:0] HPS_BUS,
+	inout  [48:0] HPS_BUS,
 
 	//Base video clock. Usually equals to CLK_SYS.
 	output        CLK_VIDEO,
@@ -237,10 +238,10 @@ localparam CONF_STR = {
 	"V,v",`BUILD_DATE
 };
 
-wire        forced_scandoubler;
-wire  [1:0] buttons;
-wire [31:0] status;
-wire [10:0] ps2_key;
+wire         forced_scandoubler;
+wire   [1:0] buttons;
+wire [127:0] status;
+wire  [10:0] ps2_key;
 
 wire        ioctl_download;
 wire        ioctl_upload;
@@ -347,7 +348,7 @@ always @(posedge CLK_50M) begin
 			end
 			5: begin
 				cfg_address <= 7;
-				cfg_data <= underclock_r ? 3268298314 : 3639383488;
+				cfg_data <= underclock_r ? 3262113561 : 3639383488;
 				cfg_write <= 1;
 			end
 			7: begin
@@ -423,8 +424,8 @@ wire m_pause    = btn_pause    | joy[8];
 
 // PAUSE SYSTEM
 wire pause_cpu;
-wire [7:0] rgb_out;
-pause #(3,3,2,49) pause
+wire [23:0] rgb_out;
+pause #(8,8,8,49) pause
 (
 	.*,
 	.clk_sys(CLK_49M),
@@ -444,16 +445,34 @@ end
 
 wire hblank, vblank;
 wire hs, vs;
-wire [2:0] r, g;
-wire [1:0] b;
+wire [2:0] r_out, g_out;
+wire [1:0] b_out;
+
+//Adjust the color tones based on the measured outputs of the weighted resistor DAC
+//on the PCB (blue uses two bits while green and red use three, resulting in a slightly
+//weaker blue output from the 470ohm pull-down resistors following the DAC)
+wire [7:0] gyruss_color_rg[8] =
+'{
+	8'd0,   8'd33,  8'd71,  8'd104,
+	8'd151, 8'd184, 8'd221, 8'd255
+};
+wire [7:0] gyruss_color_b[4] =
+'{
+	8'd0, 8'd79, 8'd168, 8'd247
+};
+wire [7:0] r = gyruss_color_rg[r_out];
+wire [7:0] g = gyruss_color_rg[g_out];
+wire [7:0] b = gyruss_color_b[b_out];
+
 wire ce_pix;
 
 wire rotate_ccw = 0;
 wire no_rotate = status[12] | direct_video;
-wire flip = ~no_rotate;
+wire flip = video_rotated;
+wire video_rotated;
 screen_rotate screen_rotate(.*);
 
-arcade_video #(256,8) arcade_video
+arcade_video #(256, 24) arcade_video
 (
 	.*,
 
@@ -497,9 +516,9 @@ Gyruss Gyruss_inst
 	.video_hblank(hblank),                                 // output video_hblank
 	.ce_pix(ce_pix),                                       // output ce_pix
 	
-	.video_r(r),                                           // output [2:0] video_r
-	.video_g(g),                                           // output [2:0] video_g
-	.video_b(b),                                           // output [1:0] video_b
+	.video_r(r_out),                                       // output [2:0] video_r
+	.video_g(g_out),                                       // output [2:0] video_g
+	.video_b(b_out),                                       // output [1:0] video_b
 	
 	.sound_l(audio_l),                                     // output [15:0] sound_l
 	.sound_r(audio_r),                                     // output [15:0] sound_r
