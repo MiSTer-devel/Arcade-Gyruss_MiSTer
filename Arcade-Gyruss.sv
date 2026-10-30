@@ -224,6 +224,7 @@ localparam CONF_STR = {
 	"A.GYRUSS;;",
 	"ODE,Aspect Ratio,Original,Full screen,[ARC1],[ARC2];",
 	"OC,Orientation,Vert,Horz;",
+	"O[65],Flip Screen,Off,On;",
 	"OFH,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"OL,Game Speed,Native,60Hz Adjust;",
 	"-;",
@@ -453,6 +454,24 @@ wire hblank, vblank;
 wire hs, vs;
 wire [2:0] r_out, g_out;
 wire [1:0] b_out;
+wire ce_pix;
+wire [7:0] rgb_flipped;
+
+//Flip the finished frame in a frame buffer. 
+//The buffer is bypassed when the option is off.
+frame_flip frame_flip_inst
+(
+	.clk(CLK_49M),
+	.ce_pix(ce_pix),
+
+	.rgb_in({r_out, g_out, b_out}),
+	.hblank(hblank),
+	.vblank(vblank),
+	.vsync(~vs),
+
+	.flip(status[65]),
+	.rgb_out(rgb_flipped)
+);
 
 //Adjust the color tones based on the measured outputs of the weighted resistor DAC
 //on the PCB (blue uses two bits while green and red use three, resulting in a slightly
@@ -466,11 +485,9 @@ wire [7:0] gyruss_color_b[4] =
 '{
 	8'd0, 8'd79, 8'd168, 8'd247
 };
-wire [7:0] r = gyruss_color_rg[r_out];
-wire [7:0] g = gyruss_color_rg[g_out];
-wire [7:0] b = gyruss_color_b[b_out];
-
-wire ce_pix;
+wire [7:0] r = gyruss_color_rg[rgb_flipped[7:5]];
+wire [7:0] g = gyruss_color_rg[rgb_flipped[4:2]];
+wire [7:0] b = gyruss_color_b[rgb_flipped[1:0]];
 
 wire rotate_ccw = 0;
 wire no_rotate = status[12] | direct_video;
